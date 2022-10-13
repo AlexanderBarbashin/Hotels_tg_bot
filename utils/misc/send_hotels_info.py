@@ -4,6 +4,7 @@ from re import search
 from json import loads
 from loader import bot
 from typing import Dict
+from telebot.types import InputMediaPhoto
 
 
 def send_hotels_info(data: Dict) -> None:
@@ -47,9 +48,10 @@ def send_hotels_info(data: Dict) -> None:
                            ),
                            'Цена за сутки: {price} RUB'.format(price=price),
                            'Итоговая цена: {total_price} RUB'.format(
-                               total_price=total_price)]
+                               total_price=total_price),
+                           'Веб-сайт отеля: https://hotels.com/ho{hotel_id}'.format(hotel_id=i_hotel['id'])]
                           )
-        bot.send_message(data['users_chat_id'], ('\n').join(hotel_info))
+        bot.send_message(data['users_chat_id'], ('\n').join(hotel_info), disable_web_page_preview=True)
         if 'users_photos_amount' in data:
             photos_url = "https://hotels4.p.rapidapi.com/properties/get-hotel-photos"
             photos_querystring = {'id': '{hotel_id}'.format(hotel_id=i_hotel['id'])}
@@ -58,9 +60,11 @@ def send_hotels_info(data: Dict) -> None:
             find = search(pattern, photos_request.text)
             if find:
                 photos_list = loads(find[0])
+                photos_group = []
                 for num in range(data['users_photos_amount']):
                     photo_url = photos_list[num]['baseUrl'].format(size=photos_list[num]['sizes'][0]['suffix'])
-                    bot.send_photo(data['users_chat_id'], photo=photo_url, parse_mode='html')
+                    photos_group.append(InputMediaPhoto(photo_url))
+                bot.send_media_group(data['users_chat_id'], photos_group)
             else:
                 bot.send_message(data['users_chat_id'], 'По вашему запросу ничего не найдено. Попробуйте еще раз')
     data.clear()
