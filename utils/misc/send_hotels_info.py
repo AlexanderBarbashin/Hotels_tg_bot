@@ -10,9 +10,9 @@ from telebot.types import InputMediaPhoto
 def send_hotels_info(data: Dict) -> None:
     """
     Функция для вывода на экран основной информации о каждом отеле, найденном в результате поиска, и фото для каждого
-    отеля (в случае положительного ответа пользователя на соответствующий запрос). После вывода информации очищает
-    данные пользователя для возможности последующих поисков
+    отеля (в случае положительного ответа пользователя на соответствующий запрос)
     """
+
     users_hotels_list = []
     for num in range(data['users_hotels_amount'] // 25 + 1):
         current_page_size = 25 if data['users_hotels_amount'] - 25 * num > 25 else data['users_hotels_amount'] - \
@@ -23,7 +23,8 @@ def send_hotels_info(data: Dict) -> None:
                               'pageSize': '{page_size}'.format(page_size=current_page_size),
                               'checkIn': '{check_in_date}'.format(check_in_date=data['check_in_date']),
                               'checkOut': '{check_out_date}'.format(check_out_date=data['check_out_date']),
-                              'adults1': '1', 'sortOrder': 'PRICE', 'locale': 'ru_RU', 'currency': 'RUB'}
+                              'adults1': '1', 'sortOrder': '{sort_order}'.format(sort_order=data['sort_order']),
+                              'locale': 'ru_RU', 'currency': 'RUB'}
         hotels_request = requests_to_api(hotels_url, headers, hotels_querystring)
         pattern = r'(?<=,"results":).+?(?=,"pagination)'
         find = search(pattern, hotels_request.text)
@@ -67,4 +68,3 @@ def send_hotels_info(data: Dict) -> None:
                 bot.send_media_group(data['users_chat_id'], photos_group)
             else:
                 bot.send_message(data['users_chat_id'], 'По вашему запросу ничего не найдено. Попробуйте еще раз')
-    data.clear()
