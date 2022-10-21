@@ -5,6 +5,7 @@ from json import loads
 from loader import bot
 from typing import Dict
 from telebot.types import InputMediaPhoto
+from .filter_hotels_list import hotels_filter
 
 
 def send_hotels_info(data: Dict) -> None:
@@ -14,25 +15,42 @@ def send_hotels_info(data: Dict) -> None:
     """
 
     users_hotels_list = []
-    for num in range(data['users_hotels_amount'] // 25 + 1):
-        current_page_size = 25 if data['users_hotels_amount'] - 25 * num > 25 else data['users_hotels_amount'] - \
-                                                                                   25 * num
+    sort_order = 'PRICE_HIGHEST_FIRST' if data['command'] == 'highprice' else 'PRICE'
+    if data['command'] == 'bestdeal':
+        data['landmark_ids'] = '"Центр города"'
+    price_min = data.get('min_price')
+    price_max = data.get('max_price')
+    landmark_ids = data.get('landmark_ids')
+    page_num = 0
+    while len(users_hotels_list) < data['users_hotels_amount']:
         hotels_url = "https://hotels4.p.rapidapi.com/properties/list"
         hotels_querystring = {'destinationId': '{city_id}'.format(city_id=data['users_city_id']),
-                              'pageNumber': '{page_num}'.format(page_num=num + 1),
-                              'pageSize': '{page_size}'.format(page_size=current_page_size),
+                              'pageNumber': '{page_num}'.format(page_num=page_num + 1),
+                              'pageSize': 25,
                               'checkIn': '{check_in_date}'.format(check_in_date=data['check_in_date']),
                               'checkOut': '{check_out_date}'.format(check_out_date=data['check_out_date']),
-                              'adults1': '1', 'sortOrder': '{sort_order}'.format(sort_order=data['sort_order']),
-                              'locale': 'ru_RU', 'currency': 'RUB'}
+                              'adults1': '1', 'priceMin': price_min, 'priceMax': price_max,
+                              'sortOrder': sort_order, 'locale': 'ru_RU', 'currency': 'RUB',
+                              'landmarkIds': landmark_ids}
         hotels_request = requests_to_api(hotels_url, headers, hotels_querystring)
         pattern = r'(?<=,"results":).+?(?=,"pagination)'
         find = search(pattern, hotels_request.text)
         if find:
             hotels_list = loads(find[0])
-            users_hotels_list.extend(hotels_list)
+            if data['command'] == 'bestdeal':
+                for i_hotel in hotels_list:
+                    filtered_hotel = hotels_filter(i_hotel, data['min_distance'], data['max_distance'])
+                    if filtered_hotel:
+                        users_hotels_list.append(filtered_hotel)
+                    if len(users_hotels_list) == data['users_hotels_amount']:
+                        break
+            else:
+                hotels_list = hotels_list[:data['users_hotels_amount'] - 25 * page_num]
+                users_hotels_list.extend(hotels_list)
+            page_num += 1
         else:
             bot.send_message(data['users_chat_id'], 'По вашему запросу ничего не найдено. Попробуйте еще раз')
+            break
     for i_hotel in users_hotels_list:
         hotel_info = ['=' * 50]
         price = i_hotel.get('ratePlan', {}).get('price', {}).get('exactCurrent', 'Информация не найдена')
