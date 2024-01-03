@@ -1,5 +1,6 @@
 from typing import Dict
 
+
 def hotels_filter(hotel: Dict, min_distance: float, max_distance: float) -> Dict | None:
     """
     Функция для фильтрования отелей по расстоянию от центра города. Если расстояние, на котором находится отель от

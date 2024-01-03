@@ -1,6 +1,9 @@
+from loguru import logger
 from telebot.types import Message
+
 from loader import bot
 from states.user_states import UserState
+
 
 @bot.message_handler(state=UserState.distance_range)
 def get_distance_range(message: Message) -> None:
@@ -16,17 +19,24 @@ def get_distance_range(message: Message) -> None:
     """
 
     try:
-        distance = round(float(message.text), 1)
+        distance_str = message.text.replace(',', '.')
+        distance = round(float(distance_str), 1)
         if distance < 0:
             bot.send_message(message.chat.id, 'Расстояние не может быть меньше 0! Повторите ввод!')
         else:
             with bot.retrieve_data(message.chat.id) as data:
                 if 'min_distance' not in data:
+                    logger.info('user input min distance: {min_distance}'.format(
+                        min_distance=distance
+                    ))
                     data['min_distance'] = distance
                     bot.send_message(message.chat.id, 'Введите максимальное расстояние, на котором находится отель от '
                                                       'центра города, в километрах')
                 else:
                     if distance >= data['min_distance']:
+                        logger.info('user input max distance: {max_distance}'.format(
+                            max_distance=distance
+                        ))
                         data['max_distance'] = distance
                         bot.send_message(message.chat.id, 'Введите количество отелей, которые необходимо вывести в '
                                                           'результате поиска (не более 40)')

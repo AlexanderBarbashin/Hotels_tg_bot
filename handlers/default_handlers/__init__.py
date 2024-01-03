@@ -1,7 +1,1 @@
-from . import start
-from . import help
-from . import hello_world
-from . import low_high_best
-from . import reply
-
-
+from . import hello_world, help, history, low_high_best, reply, start

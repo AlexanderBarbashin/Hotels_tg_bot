@@ -1,8 +1,12 @@
-from loader import bot
-from states.user_states import UserState
+from datetime import datetime
+
+from loguru import logger
 from telebot.types import Message
 from telegram_bot_calendar import DetailedTelegramCalendar
-from datetime import datetime
+
+from loader import bot
+from states.user_states import UserState
+
 
 @bot.message_handler(state=UserState.hotels_amount)
 def get_hotels_amount(message: Message) -> None:
@@ -13,11 +17,14 @@ def get_hotels_amount(message: Message) -> None:
     количество отелей (40), иначе обработчик сохраняет количество отелей, введенное пользователем, запрашивает у
     пользователя дату заселения в отель и выводит на экран клавиатуру в виде календаря
     """
+
+    logger.info('user input hotels amount: {hotels_amount}'.format(
+        hotels_amount=message.text
+    ))
     with bot.retrieve_data(message.chat.id) as data:
         if not message.text.isdigit() or int(message.text) <= 0:
-            bot.send_message(
-                'Ошибка! Количество отелей, которые необходимо вывести в результате, должно быть числом больше 0!'
-                ' Повторите ввод')
+            bot.send_message(message.chat.id, 'Ошибка! Количество отелей, которые необходимо вывести в результате, '
+                                              'должно быть числом больше 0! Повторите ввод')
         else:
             if int(message.text) > 40:
                 data['users_hotels_amount'] = 40

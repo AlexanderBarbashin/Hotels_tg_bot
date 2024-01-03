@@ -1,9 +1,12 @@
-from loader import bot
-from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from datetime import datetime, timedelta
-from states.user_states import UserState
-from keyboards.inline.photos_need_markup import photos_need_markup
+
+from loguru import logger
 from telebot.types import CallbackQuery
+from telegram_bot_calendar import LSTEP, DetailedTelegramCalendar
+
+from keyboards.inline.photos_need_markup import photos_need_markup
+from loader import bot
+from states.user_states import UserState
 
 
 @bot.callback_query_handler(func=DetailedTelegramCalendar.func())
@@ -32,11 +35,17 @@ def choose_users_dates(callback_date_info: CallbackQuery) -> None:
                               callback_date_info.message.message_id)
         with bot.retrieve_data(callback_date_info.message.chat.id) as data:
             if 'check_in_date' not in data:
+                logger.info('user input check in date: {check_in_date}'.format(
+                    check_in_date=result
+                ))
                 data['check_in_date'] = result
                 calendar, step = DetailedTelegramCalendar(locale='ru', min_date=current_date).build()
                 bot.send_message(callback_date_info.message.chat.id, 'Введите дату выселения из отеля',
                                  reply_markup=calendar)
             else:
+                logger.info('user input check out date: {check_out_date}'.format(
+                    check_out_date=result
+                ))
                 data['check_out_date'] = result
                 bot.send_message(callback_date_info.message.chat.id,
                                  'Вы хотите вывести на экран фотографии для каждого найденного отеля ?',
